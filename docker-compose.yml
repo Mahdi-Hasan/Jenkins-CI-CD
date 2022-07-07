@@ -1,0 +1,57 @@
+version: '3.3'
+services:
+  jenkins-container:
+    build: .
+    privileged: true
+    user: root
+    container_name: jenkins-container
+    ports:
+      - 8080:8080
+      - 50000:50000
+    environment:
+      - DOCKER_HOST=tcp://docker:2376 
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+          window: 120s  
+    networks:
+      - jenkins_net
+
+  agent:
+    image: jenkins/ssh-agent:jdk11
+    privileged: true
+    user: root
+    container_name: agent
+    deploy:
+      restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+          window: 120s  
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+     - 22  
+    networks:
+      - jenkins_net
+
+networks:
+    jenkins_net:
+      driver: bridge
+      
+volumes:
+  jenkins-data:
+  jenkins-docker-certs:
+  
+
+
